@@ -1,29 +1,37 @@
 using UnityEngine;
-// using UnityEngine.SceneManagement; // Oyun bitti ekranı için (daha sonra)
+// using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
     public float maxHealth = 100f;
     public float currentHealth;
 
-    // public UIManager uiManager; // Can barını güncellemek için (daha sonra)
-    // public GameObject gameOverScreen; // (daha sonra)
+    public UIManager uiManager; // UIManager'a referans
+
+    // public GameObject gameOverScreen; // Bu satırı kaldırabiliriz, UIManager yönetecek
 
     void Start()
     {
         currentHealth = maxHealth;
-        // if (uiManager != null)
-        //     uiManager.UpdatePlayerHealth(currentHealth, maxHealth);
-        // if (gameOverScreen != null)
-        //     gameOverScreen.SetActive(false);
+        if (uiManager == null)
+        {
+            uiManager = FindObjectOfType<UIManager>(); // Sahnedeki UIManager'ı bul
+            if (uiManager == null)
+                Debug.LogError("Sahnede UIManager bulunamadı!");
+        }
+
+        if (uiManager != null)
+            uiManager.UpdatePlayerHealth(currentHealth, maxHealth);
     }
 
     public void TakeDamage(float amount)
     {
         currentHealth -= amount;
-        Debug.Log("Oyuncu canı: " + currentHealth);
-        // uiManager.UpdatePlayerHealth(currentHealth, maxHealth); // UI Güncellemesi
-        // animator.SetTrigger("Hurt"); // Oyuncu hasar alma animasyonu
+        if (currentHealth < 0) currentHealth = 0; // Can eksiye düşmesin
+
+        Debug.Log(gameObject.name + " canı: " + currentHealth);
+        if (uiManager != null)
+            uiManager.UpdatePlayerHealth(currentHealth, maxHealth);
 
         if (currentHealth <= 0)
         {
@@ -31,7 +39,7 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    public void Heal(float amount) // İksir için
+    public void Heal(float amount)
     {
         currentHealth += amount;
         if (currentHealth > maxHealth)
@@ -39,18 +47,21 @@ public class PlayerHealth : MonoBehaviour
             currentHealth = maxHealth;
         }
         Debug.Log("Oyuncu iyileşti: " + currentHealth);
-        // uiManager.UpdatePlayerHealth(currentHealth, maxHealth);
+        if (uiManager != null)
+            uiManager.UpdatePlayerHealth(currentHealth, maxHealth);
     }
-
 
     void Die()
     {
         Debug.Log("Oyuncu Öldü! Oyun Bitti.");
-        // gameOverScreen.SetActive(true);
-        // Time.timeScale = 0f; // Oyunu durdur
-        // Veya
-        // SceneManager.LoadScene(SceneManager.GetActiveScene().name); // Sahneyi yeniden başlat
-        // Şimdilik sadece konsola yazsın
-        GetComponent<PlayerController>().enabled = false; // Oyuncu kontrolünü devre dışı bırak
+        if (uiManager != null)
+            uiManager.ShowGameOverScreen();
+
+        // Oyuncu kontrolünü devre dışı bırak vs.
+        PlayerController controller = GetComponent<PlayerController>();
+        if (controller != null)
+            controller.enabled = false;
+
+        // Time.timeScale = 0f; // Oyunu durdurmak için (daha sonra düşünülebilir)
     }
 }
