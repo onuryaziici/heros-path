@@ -1,90 +1,126 @@
-// PlayerController.cs (Devamı)
+// PlayerController.cs
 using UnityEngine;
+using System.Collections; 
 
 public class PlayerController : MonoBehaviour
 {
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 720f;
+    [Header("Movement")]
+    public float moveSpeed = 5f;            // Karakterin hareket hızı
+    public float rotationSpeed = 720f;      // Karakterin dönüş hızı (derece/saniye)
 
-    public float attackCooldown = 1f; // Saniye cinsinden saldırı bekleme süresi
-    private float lastAttackTime = -Mathf.Infinity; // En son ne zaman saldırı yapıldığı
+    [Header("Combat")]
+    public float attackCooldown = 1f;       // Saldırılar arası bekleme süresi
+    public GameObject attackHitboxObject;   // Saldırı anında aktif olacak hitbox objesi
+    public float attackActiveTime = 0.2f;   // Hitbox'ın ne kadar süre aktif kalacağı
 
-    public GameObject attackHitboxObject;
-    public float attackActiveTime = 0.2f; // Hitbox'ın ne kadar süre aktif kalacağı
-
-    private CharacterController characterController;
-    private Camera mainCamera;
-    // Animator animator; // Animasyon için daha sonra eklenecek
+    // --- Private Değişkenler ---
+    private CharacterController characterController; // Fiziksel hareket ve çarpışmalar için
+    private Camera mainCamera;                       // Oyuncunun hareket yönünü belirlemek için ana kamera
+    private Animator animator;                       // Animasyonları kontrol etmek için
+    private float lastAttackTime = -Mathf.Infinity;  // Saldırı cooldown'unu hesaplamak için
 
     void Start()
     {
+        // Gerekli bileşenleri başlangıçta alıp referanslarını sakla (performans için iyidir)
         characterController = GetComponent<CharacterController>();
         mainCamera = Camera.main;
+        
+        // Animator genellikle modelin olduğu child objede olabilir, bu yüzden GetComponentInChildren daha güvenlidir.
+        animator = GetComponentInChildren<Animator>();
 
+        // Başlangıçta referansların alınıp alınamadığını kontrol et
+        if (characterController == null)
+            Debug.LogError("Player üzerinde CharacterController bileşeni bulunamadı!");
+        if (mainCamera == null)
+            Debug.LogError("Sahnede 'MainCamera' etiketli bir kamera bulunamadı!");
+        if (animator == null)
+            Debug.LogWarning("Player üzerinde veya child objelerinde Animator bileşeni bulunamadı!");
         if (attackHitboxObject != null)
-            attackHitboxObject.SetActive(false);
+            attackHitboxObject.SetActive(false); // Oyun başında hitbox'ın kapalı olduğundan emin ol
         else
             Debug.LogError("Attack Hitbox Object PlayerController'a atanmamış!");
-
-        // animator = GetComponentInChildren<Animator>(); // Eğer karakter modeliniz bir child obje ise
     }
 
     void Update()
     {
+        // Oyunun ana döngüsünde her karede bu fonksiyonları çağır
         HandleMovement();
         HandleAttack();
     }
 
+    // Hareket ve rotasyon mantığını yöneten fonksiyon
     void HandleMovement()
     {
+        // Kullanıcıdan WASD veya Ok tuşları ile input al (değerler -1 ile 1 arasında olur)
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
 
+        // Kameranın ileri ve sağ yönlerini al
         Vector3 forward = mainCamera.transform.forward;
         Vector3 right = mainCamera.transform.right;
 
+        // Kameranın dikey eğiminden (aşağı bakmasından) etkilenmemek için Y eksenini sıfırla
         forward.y = 0;
         right.y = 0;
-        forward.Normalize();
+        forward.Normalize(); // Vektörleri birim vektör (uzunluğu 1) yap
         right.Normalize();
 
-        Vector3 moveDirection = forward * verticalInput + right * horizontalInput;
-        moveDirection.Normalize();
+        // Input'a ve kameranın yönüne göre hedeflenen hareket yönünü hesapla
+        Vector3 desiredMoveDirection = forward * verticalInput + right * horizontalInput;
 
-        characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
+        // Karakteri CharacterController ile hareket ettir
+        characterController.Move(desiredMoveDirection.normalized * moveSpeed * Time.deltaTime);
 
-        if (moveDirection != Vector3.zero)
+        // Animator'u güncelle
+        if (animator != null)
         {
-            Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+            // CharacterController'ın mevcut hızının büyüklüğünü al.
+            // Bu, karakterin ne kadar hızlı hareket ettiğini gösterir (0 ise duruyor demektir).
+            float currentSpeed = characterController.velocity.magnitude;
+            animator.SetFloat("MoveSpeed", currentSpeed);
+        }
+
+        // Karakteri hareket yönüne doğru döndür
+        if (desiredMoveDirection != Vector3.zero)
+        {
+            Quaternion toRotation = Quaternion.LookRotation(desiredMoveDirection, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
         }
     }
 
+    // Saldırı input'unu dinleyen fonksiyon
     void HandleAttack()
     {
-        // Sol fare tuşuna basıldıysa VE cooldown süresi dolduysa
-        if (Input.GetButtonDown("Fire1") && Time.time >= lastAttackTime + attackCooldown) // "Fire1" genellikle Sol Fare Tıklamasıdır (Input Manager'dan kontrol edilebilir)
+        // "Fire1" (genellikle Sol Fare Tıklaması) basıldıysa VE saldırı bekleme süresi dolduysa...
+        if (Input.GetButtonDown("Fire1") && Time.time >= lastAttackTime + attackCooldown)
         {
             PerformAttack();
-            lastAttackTime = Time.time; // Son saldırı zamanını güncelle
         }
     }
 
+    // Saldırı mantığını başlatan fonksiyon
     void PerformAttack()
     {
-        Debug.Log("Oyuncu Saldırdı!"); // Şimdilik konsola yazdıralım
-        // animator.SetTrigger("Attack"); // Animasyon tetikleyicisi (daha sonra)
+        lastAttackTime = Time.time; // Son saldırı zamanını şimdi olarak ayarla
 
-        // Burada hasar verme mantığı olacak
+        // Animator'e saldırı animasyonunu tetiklemesini söyle
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+        
+        // Saldırı hitbox'ını belirli bir süre için aktif et
         if (attackHitboxObject != null)
         {
             StartCoroutine(ActivateHitbox());
         }
     }
-    System.Collections.IEnumerator ActivateHitbox()
+
+    // Hitbox'ı belirli bir süre aktif edip sonra kapatan Coroutine
+    IEnumerator ActivateHitbox()
     {
         attackHitboxObject.SetActive(true);
-        yield return new WaitForSeconds(attackActiveTime); // Belirtilen süre kadar bekle
+        yield return new WaitForSeconds(attackActiveTime);
         attackHitboxObject.SetActive(false);
     }
 }

@@ -1,23 +1,27 @@
+// EnemyAI.cs
 using UnityEngine;
-using UnityEngine.AI; // NavMeshAgent için
+using UnityEngine.AI; // NavMeshAgent kullanmak için bu satır gerekli
 
 public class EnemyAI : MonoBehaviour
 {
-    public float detectionRange = 10f; // Oyuncuyu algılama mesafesi
-    public float attackRange = 1.5f;   // Oyuncuya saldırı yapma mesafesi (temas)
-    public float moveSpeed = 3f;
+    [Header("AI Settings")]
+    public float detectionRange = 10f;  // Oyuncuyu ne kadar uzaktan fark edeceği
+    public float attackRange = 1.5f;    // Oyuncuya ne kadar yaklaşınca saldıracağı
+    public float moveSpeed = 3f;        // Hareket hızı
 
-    public float damageOnContact = 5f;       // Temas halinde oyuncuya verilecek hasar
-    public float attackCooldown = 2f;        // Temasla hasar verme sıklığı
-    private float lastAttackTime_Enemy = -Mathf.Infinity;
+    [Header("Attack Settings")]
+    public float damageOnContact = 5f;  // Temas halinde oyuncuya verilecek hasar
+    public float attackCooldown = 2f;   // Ne sıklıkla saldırabileceği (saniye)
 
-    private Transform playerTarget;
-    private NavMeshAgent agent; // NavMeshAgent kullanacağız
-    // private Animator animator; // Animasyon için
+    // --- Private Değişkenler ---
+    private Transform playerTarget;             // Takip edilecek oyuncunun Transform'u
+    private NavMeshAgent agent;                 // Hareket için NavMeshAgent bileşeni
+    private Animator animator;                  // Animasyonları kontrol etmek için Animator bileşeni
+    private float lastAttackTime = -Mathf.Infinity; // En son ne zaman saldırdığını takip etmek için (cooldown hesaplaması)
 
     void Start()
     {
-        // Oyuncuyu bul (Player etiketine sahip olmalı)
+        // Oyuncuyu "Player" etiketine göre bul
         GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
         if (playerObject != null)
         {
@@ -25,54 +29,116 @@ public class EnemyAI : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Sahnede 'Player' etiketli bir obje bulunamadı!");
-            enabled = false; // Bu script'i devre dışı bırak
+            // Eğer sahnede "Player" etiketli bir obje yoksa, bu script hata vermemesi için kendini devre dışı bırakır.
+            Debug.LogError("Sahnede 'Player' etiketli bir obje bulunamadı! EnemyAI devre dışı bırakılıyor.");
+            enabled = false;
             return;
         }
 
+        // NavMeshAgent bileşenini al
         agent = GetComponent<NavMeshAgent>();
         if (agent == null)
         {
-            agent = gameObject.AddComponent<NavMeshAgent>(); // Eğer yoksa ekle
+            Debug.LogError(gameObject.name + " üzerinde NavMeshAgent bileşeni bulunamadı!");
+            enabled = false;
+            return;
         }
-        agent.speed = moveSpeed;
-        agent.stoppingDistance = attackRange * 0.8f; // Saldırı menzilinin biraz içinde dursun
+        
+        // Animator bileşenini al (Genellikle model bir child obje olduğundan GetComponentInChildren kullanmak daha güvenlidir)
+        animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            Debug.LogWarning(gameObject.name + " üzerinde veya child objelerinde Animator bileşeni bulunamadı!");
+        }
 
-        // animator = GetComponent<Animator>();
+        // NavMeshAgent ayarlarını yap
+        agent.speed = moveSpeed;
+        agent.stoppingDistance = attackRange * 0.9f; // Saldırı menzilinin biraz içinde durmasını sağlar, böylece tam temas eder.
     }
 
     void Update()
     {
+        // Gerekli referanslar yoksa (oyuncu öldüyse vb.) Update fonksiyonunu çalıştırma
         if (playerTarget == null) return;
 
+        // Oyuncu ile düşman arasındaki mesafeyi hesapla
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
 
+        // Eğer oyuncu algılama menzili içindeyse...
         if (distanceToPlayer <= detectionRange)
         {
-            // Oyuncuya doğru hareket et
-            agent.SetDestination(playerTarget.position);
-            // animator.SetBool("IsWalking", true); // Yürüme animasyonu (daha sonra)
-
-            // Oyuncu saldırı menzilindeyse ve cooldown süresi dolduysa hasar ver
-            if (distanceToPlayer <= attackRange && Time.time >= lastAttackTime_Enemy + attackCooldown)
+            // Eğer oyuncu durma mesafesinin dışındaysa (yani oyuncuya doğru hareket etmesi gerekiyorsa)...
+            if (distanceToPlayer > agent.stoppingDistance)
             {
-                PlayerHealth playerHealth = playerTarget.GetComponent<PlayerHealth>(); // PlayerHealth script'ine ihtiyacımız olacak
-                if (playerHealth != null)
+                agent.isStopped = false;
+                agent.SetDestination(playerTarget.position);
+                
+                // Animator'e yürüdüğünü bildir
+                if (animator != null)
+                    animator.SetBool("IsWalking", true);
+            }
+            // Eğer oyuncu durma mesafesi içindeyse (yani durup saldırması gerekiyorsa)...
+            else
+            {
+                agent.isStopped = true;
+                
+                // Animator'e durduğunu bildir
+                if (animator != null)
+                    animator.SetBool("IsWalking", false);
+
+                // Yüzünü oyuncuya doğru döndür
+                FaceTarget();
+
+                // Saldırı cooldown süresi dolduysa saldır
+                if (Time.time >= lastAttackTime + attackCooldown)
                 {
-                    playerHealth.TakeDamage(damageOnContact);
-                    lastAttackTime_Enemy = Time.time;
-                    Debug.Log("Düşman oyuncuya temasla hasar verdi!");
+                    Attack();
                 }
-                // animator.SetTrigger("Attack"); // Düşman saldırı animasyonu (daha sonra)
             }
         }
-        // else
-        // {
-        //     animator.SetBool("IsWalking", false); // Durma animasyonu (daha sonra)
-        // }
+        // Eğer oyuncu algılama menzili dışındaysa...
+        else
+        {
+            agent.isStopped = true;
+
+            // Animator'e durduğunu bildir
+            if (animator != null)
+                animator.SetBool("IsWalking", false);
+        }
     }
 
-    // Algılama menzilini Scene view'da görmek için (isteğe bağlı)
+    // Yüzünü hedefe (oyuncuya) doğru yavaşça döndüren fonksiyon
+    void FaceTarget()
+    {
+        Vector3 direction = (playerTarget.position - transform.position).normalized;
+        if (direction != Vector3.zero)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * agent.angularSpeed / 100);
+        }
+    }
+
+    // Saldırı mantığını içeren fonksiyon
+    void Attack()
+    {
+        lastAttackTime = Time.time; // Son saldırı zamanını güncelle
+
+        // Animator'e saldırı animasyonunu tetiklemesini söyle
+        if (animator != null)
+            animator.SetTrigger("Attack");
+
+        // Oyuncunun PlayerHealth script'ini alıp hasar ver
+        PlayerHealth playerHealth = playerTarget.GetComponent<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            // Not: Hasar verme anını animasyonun belirli bir karesine (Animation Event) bağlamak daha isabetli olur.
+            // Şimdilik animasyon tetiklenir tetiklenmez hasar veriyoruz.
+            playerHealth.TakeDamage(damageOnContact);
+            Debug.Log(gameObject.name + " oyuncuya " + damageOnContact + " hasar verdi!");
+        }
+    }
+
+    // Sahne görünümünde menzilleri görselleştirmek için (hata ayıklamada kullanışlıdır)
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
