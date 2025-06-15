@@ -1,36 +1,42 @@
 // EnemyHealth.cs
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI; // UI elemanları (Slider) için bu satır gerekli
+using UnityEngine.UI;
+using System.Collections.Generic; // List kullanmak için gerekli
 
 public class EnemyHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     public float maxHealth = 30f;
-    [SerializeField] // currentHealth'i Inspector'da görmek için ama diğer script'lerden değiştirilmesini engellemek için
+    [SerializeField]
     private float currentHealth;
 
     [Header("UI")]
-    public Slider healthBarSlider;          // Düşmanın üzerindeki can barı Slider'ı
-    public Canvas healthBarCanvasComponent; // Can barının Canvas bileşeni
+    public Slider healthBarSlider;
+    public Canvas healthBarCanvasComponent;
 
     [Header("Death")]
-    public float timeBeforeDestroy = 2.5f; // Ölüm animasyonundan sonra ne kadar bekleyip yok olacağı
+    public float timeBeforeDestroy = 2.5f;
+
+    [Header("Loot Settings")] // YENİ EKLENEN BÖLÜM
+    [Tooltip("Öldüğünde düşürebileceği eşyaların prefab listesi.")]
+    public List<GameObject> lootTable; 
+    [Tooltip("Listeden bir eşya düşürme ihtimali (0=asla, 1=her zaman).")]
+    [Range(0f, 1f)]
+    public float dropChance = 0.5f;
 
     // --- Private Değişkenler ---
-    private Animator animator;     // Animator bileşenini referans almak için
-    private bool isDead = false;   // Ölüm fonksiyonunun birden fazla kez çağrılmasını engellemek için
+    private Animator animator;
+    private bool isDead = false;
 
     void Awake()
     {
-        // Animator bileşenini al (Genellikle model bir child obje olduğundan GetComponentInChildren kullanmak daha güvenlidir)
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
             Debug.LogWarning(gameObject.name + " üzerinde veya child objelerinde Animator bileşeni bulunamadı!");
         }
 
-        // Eğer Inspector'dan atanmadıysa, child objelerden Canvas'ı bulmayı dene
         if (healthBarCanvasComponent == null)
         {
             healthBarCanvasComponent = GetComponentInChildren<Canvas>();
@@ -38,7 +44,6 @@ public class EnemyHealth : MonoBehaviour
 
         if (healthBarCanvasComponent != null)
         {
-            // World Space Canvas'ın kamerasını kodla ata
             if (healthBarCanvasComponent.renderMode == RenderMode.WorldSpace)
             {
                 healthBarCanvasComponent.worldCamera = Camera.main;
@@ -49,7 +54,6 @@ public class EnemyHealth : MonoBehaviour
             Debug.LogWarning("EnemyHealth: Health Bar Canvas component not found on " + gameObject.name);
         }
         
-        // Eğer Inspector'dan atanmadıysa, Canvas'ın altından Slider'ı bulmayı dene
         if (healthBarSlider == null && healthBarCanvasComponent != null)
         {
             healthBarSlider = healthBarCanvasComponent.GetComponentInChildren<Slider>();
@@ -58,10 +62,7 @@ public class EnemyHealth : MonoBehaviour
 
     void Start()
     {
-        // Oyuna başlarken canı fulle
         currentHealth = maxHealth;
-
-        // Can barını başlangıç değerlerine ayarla
         if (healthBarSlider != null)
         {
             healthBarSlider.maxValue = maxHealth;
@@ -69,10 +70,8 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
-    // Hasar alma fonksiyonu. Diğer script'ler (örn: AttackHitbox) bu fonksiyonu çağıracak.
     public void TakeDamage(float amount)
     {
-        // Eğer düşman zaten öldüyse, tekrar hasar almasını engelle
         if (isDead) return;
 
         currentHealth -= amount;
@@ -81,48 +80,40 @@ public class EnemyHealth : MonoBehaviour
             currentHealth = 0;
         }
 
-        // Can barını güncelle
         if (healthBarSlider != null)
         {
             healthBarSlider.value = currentHealth;
         }
 
-        // Hasar alma animasyonunu tetikle (eğer varsa)
         if (animator != null && currentHealth > 0)
         {
-            animator.SetTrigger("Hurt");
+            // Eğer Hurt animasyonunuz yoksa ve hata alıyorsanız bu satırı yorum satırı yapın veya silin.
+            // animator.SetTrigger("Hurt");
         }
 
-        // Eğer can sıfıra veya altına indiyse, ölüm fonksiyonunu çağır
         if (currentHealth <= 0)
         {
             Die();
         }
     }
 
-    // Ölüm mantığını içeren fonksiyon
     void Die()
     {
-        // Bu fonksiyonun birden fazla kez çalışmasını engelle
         if (isDead) return;
         isDead = true;
 
         Debug.Log(gameObject.name + " öldü!");
 
-        // Ölüm animasyonunu tetikle
         if (animator != null)
         {
             animator.SetTrigger("Die");
         }
 
-        // Can barını gizle
         if (healthBarCanvasComponent != null)
         {
             healthBarCanvasComponent.gameObject.SetActive(false);
         }
 
-        // Düşmanın çarpışmasını ve hareket etmesini engellemek için bileşenlerini devre dışı bırak.
-        // Bu, ölüm animasyonu oynarken başka şeylerin ona çarpmasını veya onun hareket etmesini engeller.
         Collider mainCollider = GetComponent<Collider>();
         if (mainCollider != null) mainCollider.enabled = false;
         
@@ -132,14 +123,38 @@ public class EnemyHealth : MonoBehaviour
         EnemyAI aiScript = GetComponent<EnemyAI>();
         if(aiScript != null) aiScript.enabled = false;
 
-        // Ölüm animasyonunun oynaması için bir süre bekledikten sonra objeyi sahneden tamamen sil
+        // Ölüm anında eşya düşürme fonksiyonunu çağır
+        DropLoot(); // YENİ EKLENEN FONKSİYON ÇAĞRISI
+
         Destroy(gameObject, timeBeforeDestroy);
     }
+
+    // YENİ EKLENEN FONKSİYON
+    void DropLoot()
+    {
+        // Eğer düşürecek eşya listesi boşsa veya şans tutmazsa, fonksiyondan çık.
+        if (lootTable == null || lootTable.Count == 0 || Random.value > dropChance)
+        {
+            return;
+        }
+
+        // Loot tablosundan rastgele bir eşya seç
+        int randomIndex = Random.Range(0, lootTable.Count);
+        GameObject itemToDropPrefab = lootTable[randomIndex];
+
+        if (itemToDropPrefab != null)
+        {
+            // Seçilen eşya prefab'ını, düşmanın öldüğü yerde oluştur (instantiate et).
+            // Y ekseninde biraz yukarıda oluşturmak, zeminin içine girmesini engelleyebilir.
+            Vector3 dropPosition = transform.position + Vector3.up * 0.5f;
+            Instantiate(itemToDropPrefab, dropPosition, Quaternion.identity);
+            Debug.Log(itemToDropPrefab.name + " dropped!");
+        }
+    }
     
-    // Can barının her zaman kameraya doğru bakmasını sağlayan fonksiyon
     void LateUpdate()
     {
-        if (isDead) return; // Öldüyse can barını döndürmeye gerek yok
+        if (isDead) return;
 
         if (healthBarCanvasComponent != null && healthBarCanvasComponent.gameObject.activeInHierarchy && healthBarCanvasComponent.worldCamera != null)
         {

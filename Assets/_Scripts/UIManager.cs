@@ -1,21 +1,23 @@
 // UIManager.cs
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement; // Yeniden başlatma fonksiyonu için
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class UIManager : MonoBehaviour
 {
     [Header("Player UI")]
     public Slider playerHealthSlider;
-    // public TMP_Text playerHealthText; // İsteğe bağlı: Canı sayı olarak göstermek için
 
     [Header("Game Over UI")]
     public GameObject gameOverScreen;
-    // public Button restartButton; // Butonun OnClick event'ini Inspector'dan atamak daha kolay
 
     [Header("Inventory UI")]
-    public GameObject inventoryPanel; // Envanter panelinin referansı
+    public GameObject inventoryPanel;
+
+    [Header("Interaction UI")]
+    [Tooltip("Toplanabilir bir eşyanın yanındayken görünecek UI elemanı.")]
+    public GameObject interactionPrompt; // Etkileşim yazısının referansı
 
     void Start()
     {
@@ -25,6 +27,9 @@ public class UIManager : MonoBehaviour
         
         if (inventoryPanel != null)
             inventoryPanel.SetActive(false);
+        
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
     }
 
     void Update()
@@ -45,11 +50,6 @@ public class UIManager : MonoBehaviour
             playerHealthSlider.maxValue = maxHealth;
             playerHealthSlider.value = currentHealth;
         }
-
-        // if (playerHealthText != null)
-        // {
-        //     playerHealthText.text = Mathf.RoundToInt(currentHealth) + " / " + Mathf.RoundToInt(maxHealth);
-        // }
     }
 
     public void ShowGameOverScreen()
@@ -62,18 +62,22 @@ public class UIManager : MonoBehaviour
     {
         if (inventoryPanel != null)
         {
-            // Panelin mevcut durumunun tersini yap (açıksa kapat, kapalıysa aç)
             inventoryPanel.SetActive(!inventoryPanel.activeSelf);
         }
     }
 
-    // Bu fonksiyon, "Yeniden Başla" butonunun OnClick event'ine bağlanabilir.
+    // Bu fonksiyon, etkileşim yazısını göstermek veya gizlemek için dışarıdan (PlayerInteractor'dan) çağrılacak.
+    public void ShowInteractionPrompt(bool show)
+    {
+        if (interactionPrompt != null && interactionPrompt.activeSelf != show)
+        {
+            interactionPrompt.SetActive(show);
+        }
+    }
+
     public void RestartGame()
     {
-        // Eğer oyunu durdurduysanız (Time.timeScale = 0), tekrar başlatın
         Time.timeScale = 1f;
-        
-        // Mevcut sahneyi yeniden yükle
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
