@@ -1,7 +1,8 @@
+// UIManager.cs
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // Eğer TextMeshPro kullanılırsa
-using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement; // Yeniden başlatma fonksiyonu için
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
@@ -9,18 +10,33 @@ public class UIManager : MonoBehaviour
     public Slider playerHealthSlider;
     // public TMP_Text playerHealthText; // İsteğe bağlı: Canı sayı olarak göstermek için
 
-    // [Header("Enemy UI")] - Düşman can barı için daha sonra
-    // public Slider enemyHealthSlider;
-
     [Header("Game Over UI")]
     public GameObject gameOverScreen;
-    // public Button restartButton; // Daha sonra eklenecek
+    // public Button restartButton; // Butonun OnClick event'ini Inspector'dan atamak daha kolay
+
+    [Header("Inventory UI")]
+    public GameObject inventoryPanel; // Envanter panelinin referansı
 
     void Start()
     {
+        // Oyun başında ilgili panellerin kapalı olduğundan emin ol
         if (gameOverScreen != null)
-            gameOverScreen.SetActive(false); // Oyun başında Oyun Bitti ekranını kapat
+            gameOverScreen.SetActive(false);
+        
+        if (inventoryPanel != null)
+            inventoryPanel.SetActive(false);
     }
+
+    void Update()
+    {
+        // Envanteri açıp kapatmak için input'u burada dinle
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            ToggleInventory();
+        }
+    }
+
+    // --- Fonksiyonlar ---
 
     public void UpdatePlayerHealth(float currentHealth, float maxHealth)
     {
@@ -42,9 +58,22 @@ public class UIManager : MonoBehaviour
             gameOverScreen.SetActive(true);
     }
 
-    public void RestartGame() // Butona bağlanacak fonksiyon (daha sonra)
+    public void ToggleInventory()
     {
-        Time.timeScale = 1f; // Oyunu tekrar akıcı hale getir
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        if (inventoryPanel != null)
+        {
+            // Panelin mevcut durumunun tersini yap (açıksa kapat, kapalıysa aç)
+            inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+        }
+    }
+
+    // Bu fonksiyon, "Yeniden Başla" butonunun OnClick event'ine bağlanabilir.
+    public void RestartGame()
+    {
+        // Eğer oyunu durdurduysanız (Time.timeScale = 0), tekrar başlatın
+        Time.timeScale = 1f;
+        
+        // Mevcut sahneyi yeniden yükle
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
