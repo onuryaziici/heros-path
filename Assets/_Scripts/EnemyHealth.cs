@@ -104,7 +104,7 @@ public class EnemyHealth : MonoBehaviour
         if (agent != null) agent.enabled = false;
         
         if(enemyAI != null) enemyAI.enabled = false;
-
+        AudioManager.instance.PlayEnemyDie(transform.position); // Düşmanın pozisyonunda ölüm sesi
         DropLoot();
         Destroy(gameObject, timeBeforeDestroy);
     }

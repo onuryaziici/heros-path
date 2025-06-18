@@ -104,6 +104,7 @@ public class PlayerController : MonoBehaviour
         lastAttackTime = Time.time;
         isAttacking = true;
         hitEnemiesInCurrentAttack = new List<Collider>(); // YENİ: Her saldırıda listeyi sıfırla
+        //AudioManager.instance.PlayPlayerAttackSwoosh(); // Kılıç sallama sesi --animation event ile yapıldı.
 
         if (animator != null)
         {
@@ -154,8 +155,8 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(hurtAnimationDuration);
         isTakingDamage = false;
     }
-    
-    
+
+
     public bool HasAlreadyHit(Collider enemyCollider)
     {
         return hitEnemiesInCurrentAttack.Contains(enemyCollider);
@@ -164,5 +165,10 @@ public class PlayerController : MonoBehaviour
     public void RegisterHit(Collider enemyCollider)
     {
         hitEnemiesInCurrentAttack.Add(enemyCollider);
+    }
+    
+    public void PlayAttackSwooshSound()
+    {
+        AudioManager.instance.PlayPlayerAttackSwoosh();
     }
 }

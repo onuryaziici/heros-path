@@ -46,6 +46,7 @@ public class InventorySlotUI : MonoBehaviour
     // Slota tıklandığında ne olacağı
     private void OnSlotClicked()
     {
+        AudioManager.instance.PlayUIClick(); // UI tıklama sesi
         // InventoryManager'daki ilgili eşyayı kullan
         InventoryManager.instance.UseItem(slotIndex);
         Debug.Log("Clicked on slot " + slotIndex);

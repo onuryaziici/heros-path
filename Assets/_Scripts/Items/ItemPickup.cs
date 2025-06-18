@@ -23,6 +23,7 @@ public class ItemPickup : MonoBehaviour
         {
             // Eşya başarıyla alındıysa, bu objeyi sahneden yok et.
             // PlayerInteractor, bir sonraki GetClosestItem çağrısında bu null objeyi listeden temizleyecektir.
+            AudioManager.instance.PlayItemPickup(); // Eşya toplama sesi
             Destroy(gameObject);
         }
         else

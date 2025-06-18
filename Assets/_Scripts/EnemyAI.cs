@@ -147,7 +147,19 @@ public class EnemyAI : MonoBehaviour
         isTakingDamage = false;
     }
 
-    // --- Animation Event Fonksiyonları ---
+    // --- Animation Event Functions ---
+
+    // Bu public fonksiyon, Goblin'in saldırı animasyonundaki bir Event tarafından çağrılacak.
+    public void PlayAttackSound()
+    {
+        // AudioManager'a Goblin'in pozisyonunda bir saldırı sesi çalmasını söyleyebiliriz.
+        // Veya genel, pozisyonsuz bir ses de olabilir. Şimdilik pozisyonsuz yapalım.
+        // Eğer AudioManager'da "enemyAttack" gibi bir klip varsa:
+        // AudioManager.instance.PlayEnemyAttackSound(); 
+        
+        // Eğer genel bir "swoosh" sesi kullanacaksak:
+        AudioManager.instance.PlayGoblinAttack(transform.position); // Geçici olarak oyuncunun sesini kullanabiliriz.
+    }
     public void EnableHitbox()
     {
         if (attackHitboxObject != null)

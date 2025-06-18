@@ -38,6 +38,7 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (isDead) return;
+        AudioManager.instance.PlayPlayerTakeDamage(); // Hasar alma sesi
 
         currentHealth -= amount;
         if (currentHealth < 0) currentHealth = 0;
@@ -78,6 +79,8 @@ public class PlayerHealth : MonoBehaviour
         isDead = true;
 
         Debug.Log("Oyuncu Öldü! Oyun Bitti.");
+        // YENİ: Ölüm sesini çal
+        AudioManager.instance.PlayPlayerDeath(); 
 
         if (animator != null)
         {

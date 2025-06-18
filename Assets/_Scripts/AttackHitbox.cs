@@ -22,6 +22,7 @@ public class AttackHitbox : MonoBehaviour
                 EnemyHealth enemyHealth = other.GetComponent<EnemyHealth>();
                 if (enemyHealth != null)
                 {
+                    AudioManager.instance.PlayPlayerHitEnemy(); // Vuruş sesi
                     enemyHealth.TakeDamage(damageAmount);
                     Debug.Log(other.name + " adlı düşmana " + damageAmount + " hasar verildi!");
                     
