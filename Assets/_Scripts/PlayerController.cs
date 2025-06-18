@@ -1,6 +1,7 @@
 // PlayerController.cs
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,6 +17,7 @@ public class PlayerController : MonoBehaviour
     public float attackAnimationDuration = 0.5f;
     [Tooltip("Hasar alma animasyonunun süresi. Bu süre boyunca hareket ve saldırı engellenir.")]
     public float hurtAnimationDuration = 0.4f;
+    private List<Collider> hitEnemiesInCurrentAttack;
 
     // --- Private Değişkenler ---
     private CharacterController characterController;
@@ -55,7 +57,7 @@ public class PlayerController : MonoBehaviour
         {
             HandleMovement();
         }
-        
+
         HandleAttack();
     }
 
@@ -101,12 +103,13 @@ public class PlayerController : MonoBehaviour
     {
         lastAttackTime = Time.time;
         isAttacking = true;
+        hitEnemiesInCurrentAttack = new List<Collider>(); // YENİ: Her saldırıda listeyi sıfırla
 
         if (animator != null)
         {
             animator.SetTrigger(attackParam);
         }
-        
+
         StartCoroutine(AttackCommitment());
     }
 
@@ -137,7 +140,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(attackActiveTime);
         attackHitboxObject.SetActive(false);
     }
-    
+
     IEnumerator AttackCommitment()
     {
         yield return new WaitForSeconds(attackAnimationDuration);
@@ -150,5 +153,16 @@ public class PlayerController : MonoBehaviour
         isTakingDamage = true;
         yield return new WaitForSeconds(hurtAnimationDuration);
         isTakingDamage = false;
+    }
+    
+    
+    public bool HasAlreadyHit(Collider enemyCollider)
+    {
+        return hitEnemiesInCurrentAttack.Contains(enemyCollider);
+    }
+
+    public void RegisterHit(Collider enemyCollider)
+    {
+        hitEnemiesInCurrentAttack.Add(enemyCollider);
     }
 }

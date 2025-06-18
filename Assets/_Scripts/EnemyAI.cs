@@ -1,113 +1,102 @@
 // EnemyAI.cs
 using UnityEngine;
-using UnityEngine.AI; // NavMeshAgent kullanmak için bu satır gerekli
+using UnityEngine.AI;
+using System.Collections; // Coroutine için gerekli
 
 public class EnemyAI : MonoBehaviour
 {
     [Header("AI Settings")]
-    public float detectionRange = 10f;  // Oyuncuyu ne kadar uzaktan fark edeceği
-    public float attackRange = 1.5f;    // Oyuncuya ne kadar yaklaşınca saldıracağı
-    public float moveSpeed = 3f;        // Hareket hızı
+    public float detectionRange = 10f;
+    public float attackRange = 1.5f;
+    public float moveSpeed = 3f;
 
     [Header("Attack Settings")]
-    public float damageOnContact = 5f;  // Temas halinde oyuncuya verilecek hasar
-    public float attackCooldown = 2f;   // Ne sıklıkla saldırabileceği (saniye)
+    public float damageAmount = 5f;
+    public float attackCooldown = 2f;
+    
+    [Header("State Durations")]
+    [Tooltip("Saldırı animasyonunun yaklaşık uzunluğu.")]
+    public float attackAnimationDuration = 1.2f;
+    [Tooltip("Hasar alma animasyonunun süresi.")]
+    public float hurtAnimationDuration = 0.5f;
+
+    [Header("Combat References")]
+    public GameObject attackHitboxObject;
 
     // --- Private Değişkenler ---
-    private Transform playerTarget;             // Takip edilecek oyuncunun Transform'u
-    private NavMeshAgent agent;                 // Hareket için NavMeshAgent bileşeni
-    private Animator animator;                  // Animasyonları kontrol etmek için Animator bileşeni
-    private float lastAttackTime = -Mathf.Infinity; // En son ne zaman saldırdığını takip etmek için (cooldown hesaplaması)
+    private Transform playerTarget;
+    private NavMeshAgent agent;
+    private Animator animator;
+    private float lastAttackTime = -Mathf.Infinity;
+    private bool isAttacking = false;
+    private bool isTakingDamage = false;
+
+    // Animator parametre ID'leri
+    private readonly int isWalkingParam = Animator.StringToHash("IsWalking");
+    private readonly int attackParam = Animator.StringToHash("Attack");
+    private readonly int hurtParam = Animator.StringToHash("Hurt"); // Hurt trigger'ı için
 
     void Start()
     {
-        // Oyuncuyu "Player" etiketine göre bul
+        // ... (Start fonksiyonunun referans alma kısmı aynı)
         GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-        if (playerObject != null)
-        {
-            playerTarget = playerObject.transform;
-        }
-        else
-        {
-            // Eğer sahnede "Player" etiketli bir obje yoksa, bu script hata vermemesi için kendini devre dışı bırakır.
-            Debug.LogError("Sahnede 'Player' etiketli bir obje bulunamadı! EnemyAI devre dışı bırakılıyor.");
-            enabled = false;
-            return;
-        }
+        if (playerObject != null) playerTarget = playerObject.transform;
+        else { enabled = false; return; }
 
-        // NavMeshAgent bileşenini al
         agent = GetComponent<NavMeshAgent>();
-        if (agent == null)
-        {
-            Debug.LogError(gameObject.name + " üzerinde NavMeshAgent bileşeni bulunamadı!");
-            enabled = false;
-            return;
-        }
+        if (agent == null) { enabled = false; return; }
         
-        // Animator bileşenini al (Genellikle model bir child obje olduğundan GetComponentInChildren kullanmak daha güvenlidir)
         animator = GetComponentInChildren<Animator>();
-        if (animator == null)
-        {
-            Debug.LogWarning(gameObject.name + " üzerinde veya child objelerinde Animator bileşeni bulunamadı!");
-        }
+        if (animator == null) Debug.LogWarning("Animator not found!");
 
-        // NavMeshAgent ayarlarını yap
+        if (attackHitboxObject != null) attackHitboxObject.SetActive(false);
+        else Debug.LogWarning("Enemy attackHitboxObject not assigned.");
+
         agent.speed = moveSpeed;
-        agent.stoppingDistance = attackRange * 0.9f; // Saldırı menzilinin biraz içinde durmasını sağlar, böylece tam temas eder.
+        agent.stoppingDistance = attackRange * 0.9f;
     }
 
     void Update()
     {
-        // Gerekli referanslar yoksa (oyuncu öldüyse vb.) Update fonksiyonunu çalıştırma
         if (playerTarget == null) return;
 
-        // Oyuncu ile düşman arasındaki mesafeyi hesapla
+        // Düşman sadece meşgul değilken (saldırmıyor veya hasar almıyorken) hareket mantığını çalıştırır.
+        if (!isAttacking && !isTakingDamage)
+        {
+            HandleMovementAndDetection();
+        }
+    }
+
+    void HandleMovementAndDetection()
+    {
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
 
-        // Eğer oyuncu algılama menzili içindeyse...
         if (distanceToPlayer <= detectionRange)
         {
-            // Eğer oyuncu durma mesafesinin dışındaysa (yani oyuncuya doğru hareket etmesi gerekiyorsa)...
             if (distanceToPlayer > agent.stoppingDistance)
             {
                 agent.isStopped = false;
                 agent.SetDestination(playerTarget.position);
-                
-                // Animator'e yürüdüğünü bildir
-                if (animator != null)
-                    animator.SetBool("IsWalking", true);
+                if (animator != null) animator.SetBool(isWalkingParam, true);
             }
-            // Eğer oyuncu durma mesafesi içindeyse (yani durup saldırması gerekiyorsa)...
             else
             {
                 agent.isStopped = true;
-                
-                // Animator'e durduğunu bildir
-                if (animator != null)
-                    animator.SetBool("IsWalking", false);
-
-                // Yüzünü oyuncuya doğru döndür
+                if (animator != null) animator.SetBool(isWalkingParam, false);
                 FaceTarget();
-
-                // Saldırı cooldown süresi dolduysa saldır
                 if (Time.time >= lastAttackTime + attackCooldown)
                 {
-                    Attack();
+                    StartAttack();
                 }
             }
         }
-        // Eğer oyuncu algılama menzili dışındaysa...
         else
         {
             agent.isStopped = true;
-
-            // Animator'e durduğunu bildir
-            if (animator != null)
-                animator.SetBool("IsWalking", false);
+            if (animator != null) animator.SetBool(isWalkingParam, false);
         }
     }
 
-    // Yüzünü hedefe (oyuncuya) doğru yavaşça döndüren fonksiyon
     void FaceTarget()
     {
         Vector3 direction = (playerTarget.position - transform.position).normalized;
@@ -118,27 +107,63 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // Saldırı mantığını içeren fonksiyon
-    void Attack()
+    void StartAttack()
     {
-        lastAttackTime = Time.time; // Son saldırı zamanını güncelle
+        if (isAttacking || isTakingDamage) return;
+        StartCoroutine(AttackCoroutine());
+    }
 
-        // Animator'e saldırı animasyonunu tetiklemesini söyle
+    IEnumerator AttackCoroutine()
+    {
+        isAttacking = true;
+        lastAttackTime = Time.time;
+        agent.isStopped = true; // Saldırı sırasında hareket etme
+
         if (animator != null)
-            animator.SetTrigger("Attack");
-
-        // Oyuncunun PlayerHealth script'ini alıp hasar ver
-        PlayerHealth playerHealth = playerTarget.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
         {
-            // Not: Hasar verme anını animasyonun belirli bir karesine (Animation Event) bağlamak daha isabetli olur.
-            // Şimdilik animasyon tetiklenir tetiklenmez hasar veriyoruz.
-            playerHealth.TakeDamage(damageOnContact);
-            Debug.Log(gameObject.name + " oyuncuya " + damageOnContact + " hasar verdi!");
+            animator.SetTrigger(attackParam);
+        }
+
+        yield return new WaitForSeconds(attackAnimationDuration);
+        isAttacking = false;
+    }
+
+    // Bu fonksiyon EnemyHealth tarafından çağrılır
+    public void TriggerHurtState()
+    {
+        if (!isTakingDamage)
+        {
+            StartCoroutine(HurtStateCoroutine());
         }
     }
 
-    // Sahne görünümünde menzilleri görselleştirmek için (hata ayıklamada kullanışlıdır)
+    IEnumerator HurtStateCoroutine()
+    {
+        isTakingDamage = true;
+        agent.isStopped = true; // Hasar alırken hareket etme
+        if(animator != null) animator.SetBool(isWalkingParam, false);
+
+        yield return new WaitForSeconds(hurtAnimationDuration);
+        isTakingDamage = false;
+    }
+
+    // --- Animation Event Fonksiyonları ---
+    public void EnableHitbox()
+    {
+        if (attackHitboxObject != null)
+        {
+            attackHitboxObject.SetActive(true);
+        }
+    }
+
+    public void DisableHitbox()
+    {
+        if (attackHitboxObject != null)
+        {
+            attackHitboxObject.SetActive(false);
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
