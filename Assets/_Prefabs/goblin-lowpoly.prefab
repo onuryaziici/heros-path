@@ -1086,7 +1086,7 @@ MonoBehaviour:
   damageAmount: 5
   attackCooldown: 3
   attackAnimationDuration: 2.63
-  hurtAnimationDuration: 2
+  hurtAnimationDuration: 1.76
   attackHitboxObject: {fileID: 4866887565210370843}
 --- !u!195 &2189948796663180106
 NavMeshAgent:
