@@ -18,9 +18,15 @@ public class UIManager : MonoBehaviour
     [Header("Interaction UI")]
     [Tooltip("Toplanabilir bir eşyanın yanındayken görünecek UI elemanı.")]
     public GameObject interactionPrompt; // Etkileşim yazısının referansı
+    private CameraController cameraController;
 
     void Start()
     {
+        cameraController = FindObjectOfType<CameraController>();
+         if (cameraController == null)
+        {
+            Debug.LogError("CameraController not found in the scene!");
+        }
         // Oyun başında ilgili panellerin kapalı olduğundan emin ol
         if (gameOverScreen != null)
             gameOverScreen.SetActive(false);
@@ -62,7 +68,23 @@ public class UIManager : MonoBehaviour
     {
         if (inventoryPanel != null)
         {
-            inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+            // Panelin yeni durumunu hesapla (mevcut durumun tersi)
+            bool isOpening = !inventoryPanel.activeSelf;
+            
+            // Paneli aç/kapat
+            inventoryPanel.SetActive(isOpening);
+
+            // Panelin durumuna göre imleci ayarla
+            if (isOpening)
+            {
+                // Envanter açılıyorsa: İmleci serbest bırak
+                cameraController?.UnlockCursor();
+            }
+            else
+            {
+                // Envanter kapanıyorsa: İmleci kilitle
+                cameraController?.LockCursor();
+            }
         }
     }
 
