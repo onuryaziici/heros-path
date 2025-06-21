@@ -17,6 +17,7 @@ public class EnemyHealth : MonoBehaviour
 
     [Header("Death")]
     public float timeBeforeDestroy = 2.5f;
+    public GameObject deathVFXPrefab;
 
     [Header("Loot Settings")]
     public List<GameObject> lootTable; 
@@ -27,9 +28,11 @@ public class EnemyHealth : MonoBehaviour
     private Animator animator;
     private EnemyAI enemyAI; // YENİ: EnemyAI referansı
     private bool isDead = false;
+    private FlashOnHit flashEffect; // Flash script'ine referans
 
     void Awake()
     {
+        flashEffect = GetComponent<FlashOnHit>(); // Başlangıçta referansı al
         animator = GetComponentInChildren<Animator>();
         enemyAI = GetComponent<EnemyAI>(); // YENİ: Başlangıçta referansı al
 
@@ -62,6 +65,11 @@ public class EnemyHealth : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (isDead) return;
+        // Flash efektini tetikle
+        if (flashEffect != null)
+        {
+            flashEffect.TriggerFlash();
+        }
 
         currentHealth -= amount;
         if (currentHealth < 0) currentHealth = 0;
@@ -105,6 +113,12 @@ public class EnemyHealth : MonoBehaviour
         
         if(enemyAI != null) enemyAI.enabled = false;
         AudioManager.instance.PlayEnemyDie(transform.position); // Düşmanın pozisyonunda ölüm sesi
+        // Ölüm efektini oluştur
+        if (deathVFXPrefab != null)
+        {
+            Vector3 spawnPosition = transform.position + Vector3.up * 1.25f; 
+            Instantiate(deathVFXPrefab, spawnPosition, Quaternion.identity);
+        }
         DropLoot();
         Destroy(gameObject, timeBeforeDestroy);
     }

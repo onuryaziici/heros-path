@@ -21,6 +21,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Physics")]
     public float gravity = -9.81f; // Yerçekimi kuvveti
+    [Header("VFX")]
+    public TrailRenderer weaponTrail;
     // --- Private Değişkenler ---
     private CharacterController characterController;
     private Camera mainCamera;
@@ -167,8 +169,17 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator AttackCommitment()
     {
+        isAttacking = true;
+        if (weaponTrail != null)
+        {
+            weaponTrail.emitting = true; // İzi oluşturmaya başla
+        }
         yield return new WaitForSeconds(attackAnimationDuration);
         isAttacking = false;
+        if (weaponTrail != null)
+        {
+            weaponTrail.emitting = false; // İzi oluşturmayı durdur
+        }
     }
 
     // YENİ COROUTINE: Hasar alma durumunu yönetir

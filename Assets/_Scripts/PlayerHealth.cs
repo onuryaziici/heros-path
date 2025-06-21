@@ -15,9 +15,11 @@ public class PlayerHealth : MonoBehaviour
     private Animator animator;
     private PlayerController playerController; // YENİ: PlayerController referansı
     private bool isDead = false;
+    private FlashOnHit flashEffect; // Flash script'ine referans
 
     void Start()
     {
+        flashEffect = GetComponent<FlashOnHit>(); // Başlangıçta referansı al
         currentHealth = maxHealth;
         animator = GetComponentInChildren<Animator>();
         playerController = GetComponent<PlayerController>(); // YENİ: Başlangıçta referansı al
@@ -39,6 +41,10 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isDead) return;
         AudioManager.instance.PlayPlayerTakeDamage(); // Hasar alma sesi
+        if (flashEffect != null)
+        {
+            flashEffect.TriggerFlash();
+        }
 
         currentHealth -= amount;
         if (currentHealth < 0) currentHealth = 0;

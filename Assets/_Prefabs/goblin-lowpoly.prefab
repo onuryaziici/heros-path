@@ -354,7 +354,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.25, y: 0.5, z: 0.3}
+  m_Size: {x: 0.25, y: 1, z: 0.3}
   m_Center: {x: 0, y: 0.13, z: 0}
 --- !u!114 &516685049577428494
 MonoBehaviour:
@@ -1015,6 +1015,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e43c68fa827b6e448ac1075f323aa179, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5840468796177702781}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e43c68fa827b6e448ac1075f323aa179, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -4771120577542759105}
   m_SourcePrefab: {fileID: 100100000, guid: e43c68fa827b6e448ac1075f323aa179, type: 3}
 --- !u!4 &454826447232411129 stripped
 Transform:
@@ -1065,6 +1068,7 @@ MonoBehaviour:
   healthBarSlider: {fileID: 207445834321505068}
   healthBarCanvasComponent: {fileID: 683269181338696630}
   timeBeforeDestroy: 6
+  deathVFXPrefab: {fileID: 6216745834431188952, guid: 4b6a6e4877b5d9e439a3fd08bd201aab, type: 3}
   lootTable:
   - {fileID: 5394914041727753654, guid: 8ce39fcb555999b4284f8a11134cf356, type: 3}
   dropChance: 1
@@ -1160,6 +1164,20 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &-4771120577542759105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 937890646638591811}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eb368e990dfa7440a03ad50d2515ceb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.1
 --- !u!4 &1761131244687146458 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1852576806548013000, guid: e43c68fa827b6e448ac1075f323aa179, type: 3}
