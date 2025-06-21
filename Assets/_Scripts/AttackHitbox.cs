@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class AttackHitbox : MonoBehaviour
 {
-    public float damageAmount = 10f;
+    //public float damageAmount = 10f;
     private PlayerController playerController; // YENİ
     // public string targetTag = "Enemy"; 
 
@@ -12,24 +12,24 @@ public class AttackHitbox : MonoBehaviour
         playerController = GetComponentInParent<PlayerController>();
     }
     void OnTriggerEnter(Collider other)
+{
+    if (other.CompareTag("Enemy"))
     {
-        if (other.CompareTag("Enemy"))
+        if (!playerController.HasAlreadyHit(other))
         {
-            // PlayerController'a bu düşmana daha önce vurulup vurulmadığını sor.
-            // Eğer daha önce vurulmadıysa...
-            if (!playerController.HasAlreadyHit(other))
+            EnemyHealth enemyHealth = other.GetComponent<EnemyHealth>();
+            if (enemyHealth != null)
             {
-                EnemyHealth enemyHealth = other.GetComponent<EnemyHealth>();
-                if (enemyHealth != null)
-                {
-                    AudioManager.instance.PlayPlayerHitEnemy(); // Vuruş sesi
-                    enemyHealth.TakeDamage(damageAmount);
-                    Debug.Log(other.name + " adlı düşmana " + damageAmount + " hasar verildi!");
-                    
-                    // Bu düşmanı "vuruldu" olarak kaydet.
-                    playerController.RegisterHit(other);
-                }
+                // Hasarı PlayerStats'tan al
+                int damageToDeal = PlayerStats.instance.totalDamage;
+                
+                AudioManager.instance.PlayPlayerHitEnemy();
+                enemyHealth.TakeDamage(damageToDeal);
+                Debug.Log(other.name + " adlı düşmana " + damageToDeal + " hasar verildi!");
+                
+                playerController.RegisterHit(other);
             }
         }
     }
+}
 }

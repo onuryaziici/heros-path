@@ -4457,7 +4457,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dec5e5ea0c6ba4438127bbc06f6c367, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageAmount: 10
 --- !u!1 &264487061
 GameObject:
   m_ObjectHideFlags: 0
@@ -20148,6 +20147,7 @@ MonoBehaviour:
   attackActiveTime: 0.2
   attackAnimationDuration: 0.5
   hurtAnimationDuration: 0.4
+  gravity: -9.81
 --- !u!143 &1312907675
 CharacterController:
   m_ObjectHideFlags: 0
@@ -26341,6 +26341,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4ec049d4c9eacf841bb97ad2464ff9df, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2066870919}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4ec049d4c9eacf841bb97ad2464ff9df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2066870922}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4ec049d4c9eacf841bb97ad2464ff9df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2066870921}
   m_SourcePrefab: {fileID: 100100000, guid: 4ec049d4c9eacf841bb97ad2464ff9df, type: 3}
 --- !u!1 &1750490176
 GameObject:
@@ -28792,7 +28798,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dec5e5ea0c6ba4438127bbc06f6c367, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageAmount: 10
 --- !u!65 &1921048417
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -31550,6 +31555,7 @@ MonoBehaviour:
   attackActiveTime: 0.2
   attackAnimationDuration: 1.05
   hurtAnimationDuration: 0.86
+  gravity: -9.81
 --- !u!143 &2066870917
 CharacterController:
   m_ObjectHideFlags: 0
@@ -31589,6 +31595,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemsToGive:
   - {fileID: 11400000, guid: aff2767d845c5c842beaa592294f48da, type: 2}
+  - {fileID: 11400000, guid: f5621b20e955a6e4f896c114fbbfefa5, type: 2}
+--- !u!114 &2066870921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066870912}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f44feded2007d84b9b48e7230bca1c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseDamage: 10
+  totalDamage: 0
+--- !u!114 &2066870922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066870912}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc766a21deb12b24db0c6878bd59175a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentWeapon: {fileID: 11400000, guid: f5621b20e955a6e4f896c114fbbfefa5, type: 2}
 --- !u!1 &2069091804
 GameObject:
   m_ObjectHideFlags: 0
