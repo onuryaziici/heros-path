@@ -19,6 +19,8 @@ public class PlayerController : MonoBehaviour
     public float hurtAnimationDuration = 0.4f;
     private List<Collider> hitEnemiesInCurrentAttack;
 
+    [Header("Physics")]
+    public float gravity = -9.81f; // Yerçekimi kuvveti
     // --- Private Değişkenler ---
     private CharacterController characterController;
     private Camera mainCamera;
@@ -31,6 +33,8 @@ public class PlayerController : MonoBehaviour
     private readonly int moveSpeedParam = Animator.StringToHash("MoveSpeed");
     private readonly int attackParam = Animator.StringToHash("Attack");
     private readonly int hurtParam = Animator.StringToHash("Hurt"); // YENİ: Hurt parametresi
+    private Vector3 playerVelocity; // Karakterin dikey hızını tutacak
+    private bool isGrounded; // Karakterin yerde olup olmadığını kontrol etmek için
 
     void Start()
     {
@@ -63,6 +67,16 @@ public class PlayerController : MonoBehaviour
 
     void HandleMovement()
     {
+        // Karakterin yerde olup olmadığını her karede kontrol et
+        isGrounded = characterController.isGrounded;
+
+        // Eğer yerdeyse ve aşağı doğru bir hızı varsa, bu hızı sıfırla.
+        // Bu, sürekli olarak yere doğru hızlanmasını engeller.
+        if (isGrounded && playerVelocity.y < 0)
+        {
+            playerVelocity.y = -2f; // -2f gibi küçük bir negatif değer, karakteri yere yapışık tutar.
+        }
+
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
 
@@ -77,10 +91,15 @@ public class PlayerController : MonoBehaviour
 
         characterController.Move(desiredMoveDirection * moveSpeed * Time.deltaTime);
 
+
+
         if (animator != null)
         {
-            float currentSpeed = characterController.velocity.magnitude;
-            animator.SetFloat(moveSpeedParam, currentSpeed);
+            // Dikey hızı (Y eksenini) yok sayarak sadece yatay hızı hesapla
+            Vector3 horizontalVelocity = new Vector3(characterController.velocity.x, 0, characterController.velocity.z);
+            // Animator'e sadece yatay hızın büyüklüğünü gönder
+            float horizontalSpeed = horizontalVelocity.magnitude;
+            animator.SetFloat("MoveSpeed", horizontalSpeed);
         }
 
         if (desiredMoveDirection != Vector3.zero)
@@ -88,6 +107,10 @@ public class PlayerController : MonoBehaviour
             Quaternion toRotation = Quaternion.LookRotation(desiredMoveDirection, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
         }
+        
+        // --- Yerçekimi Uygulaması (Sonda kalması önemli) ---
+        playerVelocity.y += gravity * Time.deltaTime;
+        characterController.Move(playerVelocity * Time.deltaTime);
     }
 
     void HandleAttack()
