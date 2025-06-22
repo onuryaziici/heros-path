@@ -130,7 +130,7 @@ public class EnemyHealth : MonoBehaviour
         GameObject itemToDropPrefab = lootTable[randomIndex];
         if (itemToDropPrefab != null)
         {
-            Vector3 dropPosition = transform.position + Vector3.up * 0.5f;
+            Vector3 dropPosition = transform.position + Vector3.up * 1.5f;
             Instantiate(itemToDropPrefab, dropPosition, Quaternion.identity);
         }
     }

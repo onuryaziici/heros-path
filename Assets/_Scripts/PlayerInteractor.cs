@@ -1,37 +1,31 @@
-// PlayerInteractor.cs
+// PlayerInteractor.cs (SON ve DOĞRU HALİ)
 using UnityEngine;
-using System.Collections.Generic; // List kullanmak için
-using System.Linq; // OrderBy (sıralama) ve FirstOrDefault gibi LINQ fonksiyonları için
+using System.Collections.Generic;
+using System.Linq;
 
 public class PlayerInteractor : MonoBehaviour
 {
-    // Etkileşim menzilindeki toplanabilir eşyaların listesi
-    private List<ItemPickup> interactableItems = new List<ItemPickup>();
+    public List<ItemPickup> interactableItems = new List<ItemPickup>();
     private UIManager uiManager;
 
     void Start()
     {
-        // UIManager'ı başlangıçta bul ve referansını al. Bu, FindObjectOfType'a göre daha performanslıdır.
-        // Eğer sahnede UIManager objesine "UIManager" tag'i verirseniz FindGameObjectWithTag da kullanabilirsiniz.
         uiManager = FindObjectOfType<UIManager>();
-        if (uiManager == null)
-        {
-            Debug.LogError("UIManager not found in the scene! Interaction prompts will not work.");
-        }
     }
 
     void Update()
     {
-        // Eğer "E" tuşuna basıldıysa...
+        // Önce listeyi temizle, sonra en yakını bul
+        CleanUpAndFindClosest();
+
         if (Input.GetKeyDown(KeyCode.E))
         {
-            // Eğer etkileşim listesinde potansiyel olarak en az bir eşya varsa...
+            // Eğer hala etkileşime girilecek bir şey varsa (en yakındaki), topla
             if (interactableItems.Count > 0)
             {
-                // En yakındaki geçerli eşyayı bulmayı dene
-                ItemPickup closestItem = GetClosestItem();
-                
-                // Eğer geçerli bir en yakın eşya bulunduysa, topla
+                // En yakını tekrar bulmaya gerek yok, CleanUpAndFindClosest zaten buldu.
+                // Ama güvenlik için tekrar bulabiliriz.
+                var closestItem = GetClosestItem();
                 if (closestItem != null)
                 {
                     closestItem.PickUp();
@@ -40,70 +34,51 @@ public class PlayerInteractor : MonoBehaviour
         }
     }
 
-    // Oyuncunun etkileşim trigger'ına bir obje girdiğinde
-    void OnTriggerEnter(Collider other)
+    void CleanUpAndFindClosest()
     {
-        ItemPickup item = other.GetComponent<ItemPickup>();
-        if (item != null)
-        {
-            // Eşyanın listede olmadığından emin ol ve ekle
-            if (!interactableItems.Contains(item))
-            {
-                interactableItems.Add(item);
+        // 1. Listeden 'null' veya 'missing' olan tüm referansları kaldır.
+        interactableItems.RemoveAll(item => item == null);
 
-                // Eğer bu, etkileşim alanına giren İLK geçerli eşyaysa, UI yazısını göster
-                if (interactableItems.Count == 1 && uiManager != null)
-                {
-                    uiManager.ShowInteractionPrompt(true);
-                }
-            }
+        // 2. Temizlikten sonra listenin durumuna göre UI'ı güncelle.
+        if (interactableItems.Count > 0)
+        {
+            // Eğer hala eşya varsa, prompt'u göster.
+            uiManager?.ShowInteractionPrompt(true);
+            
+            // İsteğe bağlı: En yakın eşyaya bir vurgu/outline efekti burada tetiklenebilir.
+            // ItemPickup closest = GetClosestItem();
+        }
+        else
+        {
+            // Eğer hiç eşya kalmadıysa, prompt'u gizle.
+            uiManager?.ShowInteractionPrompt(false);
         }
     }
 
-    // Oyuncunun etkileşim trigger'ından bir obje çıktığında
+    void OnTriggerEnter(Collider other)
+    {
+        ItemPickup item = other.GetComponent<ItemPickup>();
+        if (item != null && !interactableItems.Contains(item))
+        {
+            interactableItems.Add(item);
+        }
+    }
+
     void OnTriggerExit(Collider other)
     {
         ItemPickup item = other.GetComponent<ItemPickup>();
         if (item != null)
         {
-            // Eşyayı listeden çıkar
             interactableItems.Remove(item);
-            
-            // Eğer etkileşim alanında HİÇ geçerli eşya kalmadıysa, UI yazısını gizle
-            if (interactableItems.Count == 0 && uiManager != null)
-            {
-                uiManager.ShowInteractionPrompt(false);
-            }
         }
     }
 
-    // Listede oyuncuya en yakın olan eşyayı bulan ve UI'ı güncelleyen fonksiyon
     private ItemPickup GetClosestItem()
     {
-        // 1. ADIM: Listeden, oyuncu tarafından toplandığı için veya başka bir nedenle 
-        // yok olduğu için 'null' hale gelmiş tüm referansları temizle.
-        interactableItems.RemoveAll(item => item == null);
-
-        // 2. ADIM: Temizlikten sonra listede hala etkileşime girilebilecek bir eşya kalıp kalmadığını kontrol et.
-        if (interactableItems.Count == 0)
-        {
-            // Eğer listede hiç eşya kalmadıysa, "E'ye bas" yazısını KESİNLİKLE kapat.
-            if (uiManager != null)
-            {
-                uiManager.ShowInteractionPrompt(false);
-            }
-            // Ve fonksiyondan çık, çünkü en yakın eşya diye bir şey yok.
-            return null;
-        }
-
-        // 3. ADIM: Eğer listede hala eşyalar varsa, en yakın olanı bul ve döndür.
-        // Eğer sadece bir eleman varsa, sıralamaya gerek yok, direkt onu döndür.
-        if (interactableItems.Count == 1)
-        {
-            return interactableItems[0];
-        }
+        // Bu fonksiyon artık sadece sıralama ve döndürme işini yapıyor.
+        // Temizlik ve UI güncellemesi Update'teki CleanUpAndFindClosest'e taşındı.
+        if (interactableItems.Count == 0) return null;
         
-        // Birden fazla eleman varsa, listeyi oyuncuya olan mesafeye göre sırala ve en yakın olanı (ilkini) döndür.
         return interactableItems.OrderBy(item => Vector3.Distance(transform.position, item.transform.position)).FirstOrDefault();
     }
 }

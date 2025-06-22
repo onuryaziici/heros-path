@@ -1070,7 +1070,7 @@ MonoBehaviour:
   timeBeforeDestroy: 6
   deathVFXPrefab: {fileID: 6216745834431188952, guid: 4b6a6e4877b5d9e439a3fd08bd201aab, type: 3}
   lootTable:
-  - {fileID: 5394914041727753654, guid: 8ce39fcb555999b4284f8a11134cf356, type: 3}
+  - {fileID: 5394914041727753654, guid: 09c0f80351870f74a84e4261ed783316, type: 3}
   dropChance: 1
 --- !u!114 &7474149716439318354
 MonoBehaviour:
