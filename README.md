@@ -1,5 +1,7 @@
 # Hero's Path - A Simple Action RPG Prototype
 
+![Gameplay Showcase](./.github/images/herospath-gif.gif)
+
 A simple yet comprehensive top-down Action RPG prototype developed in Unity. This project was created as a portfolio piece to demonstrate core game development skills, including C# programming, system design, and Unity engine proficiency.
 
 **[► Watch Gameplay Video](https://www.youtube.com/watch?v=4RdXq3yN5FY) ** 
@@ -69,3 +71,8 @@ To run this project locally:
 4.  Press Play!
 
 ---
+
+## 🎬 Showcase
+
+### Dynamic Camera in Action
+![Camera Orbit and Collision](./.github/images/camera-gif.gif)
